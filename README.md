@@ -1,14 +1,17 @@
 # OKX BTC交易机器人 - 智能交易系统
 
-## 新版本正在调试策略中，为能稳定盈利，请大家耐心等待
+## 老版本进场判断较好，但出场时机判断不是很佳，特引入新的策略和创建新的ai提示词
+## 新版本正在调试策略中，为能稳定盈利，请大家耐心等待。
+### 目前经几天不断调整策略，11月1日测试1天，胜率很高，为减少大家不必要损失，新版本源码再测试一段时间更新上传，请大家耐心等待
 
 **新版支持BTC\ETH\SOL，可自由设定，使用ict-2022策略交易，进出场更加准确**
 
 [多币种ICT策略ai机器人演示网站multi-okx.zhongdu.net](http://192.227.137.234:5003/)
 
-<img width="1910" height="923" alt="image" src="https://github.com/user-attachments/assets/2485d8d7-0210-40df-a4b9-78457dfd4c58" />
-<img width="1910" height="923" alt="image" src="https://github.com/user-attachments/assets/9ee54898-44dc-466d-b6c6-0b6b142b87a5" />
-<img width="1910" height="923" alt="image" src="https://github.com/user-attachments/assets/5d6f2a10-a858-4771-9ab4-9d58bb950057" />
+<img width="1910" height="923" alt="image" src="https://github.com/user-attachments/assets/708e9f82-2f91-4eee-be39-f1361d7fd601" />
+<img width="1910" height="923" alt="image" src="https://github.com/user-attachments/assets/e77c54aa-a250-4e40-95b7-c361d7896d15" />
+<img width="1910" height="923" alt="image" src="https://github.com/user-attachments/assets/72de12c2-96af-4f65-95d6-9c3acaeb50cb" />
+
 
 ## 项目概述
 
