@@ -1,0 +1,9 @@
+ccxt
+openai
+pandas
+schedule
+python-dotenv
+requests
+urllib3
+streamlit
+plotly

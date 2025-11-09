@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # BTC自动交易机器人（统一服务）
+  btc-trading-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: btc-trading-bot
+    restart: unless-stopped
+    environment:
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - OKX_API_KEY=${OKX_API_KEY}
+      - OKX_SECRET=${OKX_SECRET}
+      - OKX_PASSWORD=${OKX_PASSWORD}
+    ports:
+      - "8501:8501"
+    volumes:
+      # 挂载数据目录
+      - ./data:/app/data
+      - ./trading_data.json:/app/trading_data.json
+      - ./trades_history.json:/app/trades_history.json
+    networks:
+      - trading-network
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -f http://localhost:8501/_stcore/health && pgrep -f 'python.*run.py'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  trading-network:
+    driver: bridge
+
+volumes:
+  data:
+
