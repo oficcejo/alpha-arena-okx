@@ -8,6 +8,7 @@ from typing import Dict, List, Optional
 
 DATA_FILE = "trading_data.json"
 TRADES_FILE = "trades_history.json"
+EQUITY_HISTORY_FILE = "equity_history.json"
 
 def save_trading_data(data: Dict):
     """保存交易数据"""
@@ -86,6 +87,46 @@ def calculate_performance(trades: List[Dict]) -> Dict:
         'losing_trades': losing_trades
     }
 
+def save_equity_snapshot(equity: float, timestamp: str = None):
+    """保存账户权益快照"""
+    try:
+        if timestamp is None:
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        # 加载现有历史
+        equity_history = []
+        if os.path.exists(EQUITY_HISTORY_FILE):
+            with open(EQUITY_HISTORY_FILE, 'r', encoding='utf-8') as f:
+                equity_history = json.load(f)
+
+        # 添加新快照
+        equity_history.append({
+            'timestamp': timestamp,
+            'equity': equity
+        })
+
+        # 保留最近1000条记录
+        if len(equity_history) > 1000:
+            equity_history = equity_history[-1000:]
+
+        # 保存
+        with open(EQUITY_HISTORY_FILE, 'w', encoding='utf-8') as f:
+            json.dump(equity_history, f, ensure_ascii=False, indent=2)
+
+    except Exception as e:
+        print(f"保存权益快照失败: {e}")
+
+def load_equity_history() -> List[Dict]:
+    """加载账户权益历史"""
+    try:
+        if os.path.exists(EQUITY_HISTORY_FILE):
+            with open(EQUITY_HISTORY_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        return []
+    except Exception as e:
+        print(f"加载权益历史失败: {e}")
+        return []
+
 def update_system_status(
     status: str,
     account_info: Optional[Dict] = None,
@@ -160,4 +201,8 @@ def update_system_status(
 
     # 保存
     save_trading_data(current_data)
+
+    # 🆕 保存权益快照（如果有账户信息）
+    if account_info and 'equity' in account_info:
+        save_equity_snapshot(account_info['equity'], current_data['last_update'])
 

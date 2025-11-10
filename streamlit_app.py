@@ -302,92 +302,120 @@ def load_trades_history():
         st.error(f"加载交易历史失败: {e}")
         return []
 
-def create_pnl_chart(trades_history):
-    """创建收益曲线图 - 高端深色主题"""
-    if not trades_history:
+def create_equity_chart():
+    """创建账户总权益曲线图 - 高端深色主题"""
+    try:
+        # 导入数据管理函数
+        from data_manager import load_equity_history
+
+        equity_history = load_equity_history()
+
+        if not equity_history or len(equity_history) == 0:
+            fig = go.Figure()
+            fig.add_annotation(
+                text="暂无权益数据",
+                xref="paper", yref="paper",
+                x=0.5, y=0.5, showarrow=False,
+                font=dict(size=20, color="#667eea")
+            )
+            fig.update_layout(
+                height=400,
+                xaxis=dict(showgrid=False, showticklabels=False),
+                yaxis=dict(showgrid=False, showticklabels=False),
+                plot_bgcolor='rgba(30, 30, 46, 0.6)',
+                paper_bgcolor='rgba(0,0,0,0)',
+            )
+            return fig
+
+        df = pd.DataFrame(equity_history)
+        df['timestamp'] = pd.to_datetime(df['timestamp'])
+
+        # 计算初始权益和当前权益
+        initial_equity = df['equity'].iloc[0]
+        current_equity = df['equity'].iloc[-1]
+        equity_change = current_equity - initial_equity
+        equity_change_pct = (equity_change / initial_equity * 100) if initial_equity > 0 else 0
+
+        # 确定颜色（根据盈亏）
+        line_color = '#38ef7d' if equity_change >= 0 else '#f5576c'
+        fill_color = 'rgba(56, 239, 125, 0.2)' if equity_change >= 0 else 'rgba(245, 87, 108, 0.2)'
+
+        fig = go.Figure()
+
+        # 添加账户总权益曲线
+        fig.add_trace(go.Scatter(
+            x=df['timestamp'],
+            y=df['equity'],
+            mode='lines+markers',
+            name='账户总权益',
+            line=dict(color=line_color, width=3, shape='spline'),
+            fill='tozeroy',
+            fillcolor=fill_color,
+            marker=dict(
+                size=8,
+                color=line_color,
+                line=dict(color='white', width=2)
+            ),
+            hovertemplate='<b>时间</b>: %{x}<br><b>总权益</b>: %{y:.2f} USDT<extra></extra>'
+        ))
+
+        # 添加初始权益基准线
+        fig.add_hline(
+            y=initial_equity,
+            line_dash="dash",
+            line_color="rgba(255, 255, 255, 0.3)",
+            line_width=2,
+            annotation_text=f"初始: {initial_equity:.2f} USDT",
+            annotation_position="right"
+        )
+
+        fig.update_layout(
+            title=dict(
+                text=f"💰 账户总权益曲线 ({equity_change:+.2f} USDT / {equity_change_pct:+.2f}%)",
+                font=dict(size=24, color='#e0e0e0', family="Arial Black"),
+                x=0.5,
+                xanchor='center'
+            ),
+            xaxis=dict(
+                title="时间",
+                showgrid=True,
+                gridcolor='rgba(255, 255, 255, 0.1)',
+                color='#b0b0b0',
+                title_font=dict(size=14, color='#b0b0b0')
+            ),
+            yaxis=dict(
+                title="总权益 (USDT)",
+                showgrid=True,
+                gridcolor='rgba(255, 255, 255, 0.1)',
+                color='#b0b0b0',
+                title_font=dict(size=14, color='#b0b0b0')
+            ),
+            height=450,
+            hovermode='x unified',
+            showlegend=False,
+            plot_bgcolor='rgba(30, 30, 46, 0.6)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='#e0e0e0'),
+            margin=dict(l=60, r=40, t=60, b=60)
+        )
+
+        return fig
+
+    except Exception as e:
+        # 出错时返回空图表
         fig = go.Figure()
         fig.add_annotation(
-            text="暂无交易数据",
+            text=f"加载权益数据失败: {str(e)}",
             xref="paper", yref="paper",
             x=0.5, y=0.5, showarrow=False,
-            font=dict(size=20, color="#667eea")
+            font=dict(size=16, color="#f5576c")
         )
         fig.update_layout(
             height=400,
-            xaxis=dict(showgrid=False, showticklabels=False),
-            yaxis=dict(showgrid=False, showticklabels=False),
             plot_bgcolor='rgba(30, 30, 46, 0.6)',
             paper_bgcolor='rgba(0,0,0,0)',
         )
         return fig
-    
-    df = pd.DataFrame(trades_history)
-    df['timestamp'] = pd.to_datetime(df['timestamp'])
-    df['cumulative_pnl'] = df['pnl'].cumsum()
-    
-    # 确定颜色（根据盈亏）
-    final_pnl = df['cumulative_pnl'].iloc[-1]
-    line_color = '#38ef7d' if final_pnl >= 0 else '#f5576c'
-    fill_color = 'rgba(56, 239, 125, 0.2)' if final_pnl >= 0 else 'rgba(245, 87, 108, 0.2)'
-    
-    fig = go.Figure()
-    
-    # 添加累计盈亏曲线
-    fig.add_trace(go.Scatter(
-        x=df['timestamp'],
-        y=df['cumulative_pnl'],
-        mode='lines+markers',
-        name='累计盈亏',
-        line=dict(color=line_color, width=3, shape='spline'),
-        fill='tozeroy',
-        fillcolor=fill_color,
-        marker=dict(
-            size=8,
-            color=line_color,
-            line=dict(color='white', width=2)
-        ),
-        hovertemplate='<b>时间</b>: %{x}<br><b>盈亏</b>: %{y:.2f} USDT<extra></extra>'
-    ))
-    
-    # 添加零线
-    fig.add_hline(
-        y=0, 
-        line_dash="dash", 
-        line_color="rgba(255, 255, 255, 0.3)", 
-        line_width=2
-    )
-    
-    fig.update_layout(
-        title=dict(
-            text="💰 收益曲线",
-            font=dict(size=24, color='#e0e0e0', family="Arial Black"),
-            x=0.5,
-            xanchor='center'
-        ),
-        xaxis=dict(
-            title="时间",
-            showgrid=True,
-            gridcolor='rgba(255, 255, 255, 0.1)',
-            color='#b0b0b0',
-            title_font=dict(size=14, color='#b0b0b0')
-        ),
-        yaxis=dict(
-            title="累计盈亏 (USDT)",
-            showgrid=True,
-            gridcolor='rgba(255, 255, 255, 0.1)',
-            color='#b0b0b0',
-            title_font=dict(size=14, color='#b0b0b0')
-        ),
-        height=450,
-        hovermode='x unified',
-        showlegend=False,
-        plot_bgcolor='rgba(30, 30, 46, 0.6)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='#e0e0e0'),
-        margin=dict(l=60, r=40, t=60, b=60)
-    )
-    
-    return fig
 
 def create_signal_distribution_chart(trades_history):
     """创建信号分布饼图 - 高端深色主题"""
@@ -582,11 +610,11 @@ def main():
         </div>
         """, unsafe_allow_html=True)
     
-    # 第三行：收益曲线
-    st.markdown("### 📉 收益曲线")
-    pnl_chart = create_pnl_chart(trades_history)
+    # 第三行：账户总权益曲线
+    st.markdown("### 📈 账户总权益曲线")
+    equity_chart = create_equity_chart()
     st.plotly_chart(
-        pnl_chart,
+        equity_chart,
         use_container_width=True,
         config={'displayModeBar': True, 'displaylogo': False}
     )
