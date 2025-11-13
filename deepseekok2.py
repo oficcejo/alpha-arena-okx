@@ -33,13 +33,13 @@ exchange = ccxt.okx({
 TRADE_CONFIG = {
     'symbol': 'BTC/USDT:USDT',  # OKX的合约符号格式
     'leverage': 10,  # 杠杆倍数,只影响保证金不影响下单价值
-    'timeframe': '15m',  # 使用15分钟K线
+    'timeframe': '1h',  # 使用1小时K线
     'test_mode': False,  # 测试模式
-    'data_points': 96,  # 24小时数据（96根15分钟K线）
+    'data_points': 168,  # 7天数据（168根1小时K线）
     'analysis_periods': {
-        'short_term': 20,  # 短期均线
-        'medium_term': 50,  # 中期均线
-        'long_term': 96  # 长期趋势
+        'short_term': 20,  # 短期均线（20小时）
+        'medium_term': 50,  # 中期均线（50小时，约2天）
+        'long_term': 168  # 长期趋势（168小时，7天）
     },
     # 新增智能仓位参数
     'position_management': {
@@ -1001,11 +1001,11 @@ def cancel_existing_tp_sl_orders():
                     ord_type = order.get('ordType')
                     if ord_type in ['conditional', 'oco']:
                         try:
-                            # 取消算法订单
+                            # 取消算法订单 - 使用正确的格式
                             cancel_response = exchange.private_post_trade_cancel_algos({
                                 'params': [{
                                     'algoId': order['algoId'],
-                                    'instId': TRADE_CONFIG['symbol']
+                                    'instId': inst_id  # ✅ 修复：使用正确的格式 BTC-USDT-SWAP
                                 }]
                             })
 
@@ -1026,7 +1026,63 @@ def cancel_existing_tp_sl_orders():
         print(f"⚠️ 取消止盈止损订单时出错: {e}")
 
 
-def set_stop_loss_take_profit(position_side, stop_loss_price, take_profit_price, position_size):
+def check_existing_tp_sl_orders(position_side, stop_loss_price, take_profit_price, position_size):
+    """
+    检查是否已存在相同的止盈止损订单，避免重复创建
+
+    返回: True=已存在相同订单，False=需要创建新订单
+    """
+    try:
+        inst_id = TRADE_CONFIG['symbol'].replace('/USDT:USDT', '-USDT-SWAP').replace('/', '-')
+
+        # 查询当前活跃的算法订单
+        response = exchange.private_get_trade_orders_algo_pending({
+            'instType': 'SWAP',
+            'instId': inst_id,
+            'ordType': 'conditional'
+        })
+
+        if response.get('code') == '0' and response.get('data'):
+            orders = response['data']
+
+            # 检查是否有匹配的订单
+            has_sl = False
+            has_tp = False
+
+            for order in orders:
+                # 检查订单方向和数量是否匹配
+                order_side = order.get('side')
+                order_sz = float(order.get('sz', 0))
+
+                # 平仓方向应该与持仓相反
+                expected_side = 'sell' if position_side == 'long' else 'buy'
+
+                if order_side == expected_side and abs(order_sz - position_size) < 0.01:
+                    # 检查止损订单
+                    if order.get('slTriggerPx'):
+                        sl_trigger = float(order['slTriggerPx'])
+                        if abs(sl_trigger - stop_loss_price) < 1:  # 价格差异小于1美元
+                            has_sl = True
+
+                    # 检查止盈订单
+                    if order.get('tpTriggerPx'):
+                        tp_trigger = float(order['tpTriggerPx'])
+                        if abs(tp_trigger - take_profit_price) < 1:  # 价格差异小于1美元
+                            has_tp = True
+
+            # 如果止损和止盈订单都已存在，返回True
+            if has_sl and has_tp:
+                print(f"ℹ️ 止盈止损订单已存在，无需重复创建")
+                return True
+
+        return False
+
+    except Exception as e:
+        print(f"⚠️ 检查订单失败: {e}")
+        return False
+
+
+def set_stop_loss_take_profit(position_side, stop_loss_price, take_profit_price, position_size, force_update=False):
     """
     设置止盈止损订单 - 使用OKX算法订单API
 
@@ -1035,6 +1091,7 @@ def set_stop_loss_take_profit(position_side, stop_loss_price, take_profit_price,
         stop_loss_price: 止损价格
         take_profit_price: 止盈价格
         position_size: 持仓数量
+        force_update: 是否强制更新（默认False，会检查是否已存在相同订单）
     """
     global active_tp_sl_orders
 
@@ -1042,7 +1099,12 @@ def set_stop_loss_take_profit(position_side, stop_loss_price, take_profit_price,
         # 转换交易对格式：BTC/USDT:USDT -> BTC-USDT-SWAP
         inst_id = TRADE_CONFIG['symbol'].replace('/USDT:USDT', '-USDT-SWAP').replace('/', '-')
 
-        # 先取消现有的止盈止损订单
+        # 🆕 如果不是强制更新，先检查是否已存在相同订单
+        if not force_update:
+            if check_existing_tp_sl_orders(position_side, stop_loss_price, take_profit_price, position_size):
+                return True  # 订单已存在，无需重复创建
+
+        # 取消现有的止盈止损订单
         cancel_existing_tp_sl_orders()
 
         # 确定订单方向（平仓方向与开仓相反）
@@ -1309,23 +1371,33 @@ def execute_intelligent_trade(signal_data, price_data):
 
         elif signal_data['signal'] == 'HOLD':
             print("建议观望，不执行交易")
-            # 如果有持仓，确保止盈止损订单存在
+            # 🆕 优化：如果有持仓，检查止盈止损订单是否存在，不存在才创建
             if current_position and current_position['size'] > 0:
                 stop_loss_price = signal_data.get('stop_loss')
                 take_profit_price = signal_data.get('take_profit')
 
-                # 检查是否需要更新止盈止损
-                if stop_loss_price or take_profit_price:
-                    print(f"\n📊 更新止盈止损订单:")
-                    print(f"   止损价格: {stop_loss_price}")
-                    print(f"   止盈价格: {take_profit_price}")
+                # 只有当止盈止损价格有效时才处理
+                if stop_loss_price and take_profit_price:
+                    # 检查是否已存在订单（不强制更新）
+                    if not check_existing_tp_sl_orders(
+                        current_position['side'],
+                        stop_loss_price,
+                        take_profit_price,
+                        current_position['size']
+                    ):
+                        print(f"\n📊 创建止盈止损订单:")
+                        print(f"   止损价格: {stop_loss_price}")
+                        print(f"   止盈价格: {take_profit_price}")
 
-                    set_stop_loss_take_profit(
-                        position_side=current_position['side'],
-                        stop_loss_price=stop_loss_price,
-                        take_profit_price=take_profit_price,
-                        position_size=current_position['size']
-                    )
+                        set_stop_loss_take_profit(
+                            position_side=current_position['side'],
+                            stop_loss_price=stop_loss_price,
+                            take_profit_price=take_profit_price,
+                            position_size=current_position['size'],
+                            force_update=False  # 不强制更新
+                        )
+                    else:
+                        print(f"ℹ️ 止盈止损订单已存在，无需更新")
             return
 
         print("智能交易执行成功")
@@ -1333,7 +1405,7 @@ def execute_intelligent_trade(signal_data, price_data):
         position = get_current_position()
         print(f"更新后持仓: {position}")
 
-        # 设置止盈止损订单
+        # 🆕 交易后设置止盈止损订单（强制更新）
         if position and position['size'] > 0:
             stop_loss_price = signal_data.get('stop_loss')
             take_profit_price = signal_data.get('take_profit')
@@ -1347,7 +1419,8 @@ def execute_intelligent_trade(signal_data, price_data):
                     position_side=position['side'],
                     stop_loss_price=stop_loss_price,
                     take_profit_price=take_profit_price,
-                    position_size=position['size']
+                    position_size=position['size'],
+                    force_update=True  # 交易后强制更新订单
                 )
 
         # 保存交易记录

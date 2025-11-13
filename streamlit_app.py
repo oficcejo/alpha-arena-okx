@@ -267,7 +267,7 @@ def load_trading_data():
                 "btc": {
                     "price": 0,
                     "change": 0,
-                    "timeframe": "15m",
+                    "timeframe": "1h",
                     "mode": "全仓-单向"
                 },
                 "position": None,
