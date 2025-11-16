@@ -49,6 +49,11 @@
 - [推荐型：2核心3.5G内存65GSSD7T带宽32.49美元/年](https://my.racknerd.com/aff.php?aff=13902&pid=905)
 - [高端型：4核心6G内存140GSSD12T带宽59.99美元/年](https://my.racknerd.com/aff.php?aff=13902&pid=907)
 
+### 如活动失效或显示库存不足，推荐购买七牛云新加坡服务器
+
+- [进阶型：1核心2G内存20GSSD3.5T带宽50M138元人民币/年](https://s.qiniu.com/bAn6N3)
+- [推荐型：2核心4G内存40GSSD7T带宽100M250元人民币/年](https://s.qiniu.com/Abu6Jb)
+- 
 **适合VPS/云服务器，图形化管理，自动重启保障！**
 
 ```bash
