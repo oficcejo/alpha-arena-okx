@@ -1003,7 +1003,7 @@ def cancel_existing_tp_sl_orders():
                         try:
                             # 取消算法订单 - 使用正确的格式
                             cancel_response = exchange.private_post_trade_cancel_algos({
-                                'params': [{
+                                [{
                                     'algoId': order['algoId'],
                                     'instId': inst_id  # ✅ 修复：使用正确的格式 BTC-USDT-SWAP
                                 }]
