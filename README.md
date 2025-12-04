@@ -44,10 +44,10 @@
 
 ### 服务器部署，推荐美国vps服务器部署，价格便宜，访问速度。
 推荐美国老牌服务器厂商RackNerd稳定服务器**支持支付宝付款**
-- [推荐：满足要求型：1核心1G内存24GSSD2T带宽11.29美元/年](https://my.racknerd.com/aff.php?aff=13902&pid=903)
-- [进阶型：1核心2G内存40GSSD3.5T带宽18.29美元/年](https://my.racknerd.com/aff.php?aff=13902&pid=904)
-- [推荐型：2核心3.5G内存65GSSD7T带宽32.49美元/年](https://my.racknerd.com/aff.php?aff=13902&pid=905)
-- [高端型：4核心6G内存140GSSD12T带宽59.99美元/年](https://my.racknerd.com/aff.php?aff=13902&pid=907)
+- [推荐：满足要求型：1核心1G内存25GSSD2T带宽10.60美元/年](https://my.racknerd.com/aff.php?aff=13902&pid=923)
+- [进阶型：2核心2.5G内存45GSSD3.5T带宽18.29美元/年](https://my.racknerd.com/aff.php?aff=13902&pid=924)
+- [推荐型：3核心4G内存65GSSD6T带宽29.98美元/年](https://my.racknerd.com/aff.php?aff=13902&pid=925)
+- [高端型：5核心6G内存100GSSD12T带宽44.98美元/年](https://my.racknerd.com/aff.php?aff=13902&pid=926)
 
 ### 如活动失效或显示库存不足，推荐购买七牛云新加坡服务器
 
