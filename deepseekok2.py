@@ -1003,7 +1003,7 @@ def cancel_existing_tp_sl_orders():
                         try:
                             # 取消算法订单 - 使用正确的格式
                             cancel_response = exchange.private_post_trade_cancel_algos({
-                                'params': [{
+                                [{
                                     'algoId': order['algoId'],
                                     'instId': inst_id  # ✅ 修复：使用正确的格式 BTC-USDT-SWAP
                                 }]
@@ -1373,6 +1373,7 @@ def execute_intelligent_trade(signal_data, price_data):
             print("建议观望，不执行交易")
             # 🆕 优化：如果有持仓，检查止盈止损订单是否存在，不存在才创建
             if current_position and current_position['size'] > 0:
+                is_long = current_position['side'] == 'long' # 判断做空还是做多  当做空的时候止损价格和止盈价格要切换位置，不然会创建失败
                 stop_loss_price = signal_data.get('stop_loss')
                 take_profit_price = signal_data.get('take_profit')
 
@@ -1386,13 +1387,13 @@ def execute_intelligent_trade(signal_data, price_data):
                         current_position['size']
                     ):
                         print(f"\n📊 创建止盈止损订单:")
-                        print(f"   止损价格: {stop_loss_price}")
-                        print(f"   止盈价格: {take_profit_price}")
+                        print(f"   止损价格: {stop_loss_price if is_long else take_profit_price}")
+                        print(f"   止盈价格: {take_profit_price if is_long else stop_loss_price}")
 
                         set_stop_loss_take_profit(
                             position_side=current_position['side'],
-                            stop_loss_price=stop_loss_price,
-                            take_profit_price=take_profit_price,
+                            stop_loss_price=stop_loss_price if is_long else take_profit_price,
+                            take_profit_price=take_profit_price if is_long else stop_loss_price,
                             position_size=current_position['size'],
                             force_update=False  # 不强制更新
                         )
@@ -1407,18 +1408,19 @@ def execute_intelligent_trade(signal_data, price_data):
 
         # 🆕 交易后设置止盈止损订单（强制更新）
         if position and position['size'] > 0:
+            is_long = current_position['side'] == 'long' # 判断做空还是做多
             stop_loss_price = signal_data.get('stop_loss')
             take_profit_price = signal_data.get('take_profit')
 
             if stop_loss_price or take_profit_price:
                 print(f"\n📊 设置止盈止损:")
-                print(f"   止损价格: {stop_loss_price}")
-                print(f"   止盈价格: {take_profit_price}")
+                print(f"   止损价格: {stop_loss_price if is_long else take_profit_price}")
+                print(f"   止盈价格: {take_profit_price if is_long else stop_loss_price}")
 
                 set_stop_loss_take_profit(
                     position_side=position['side'],
-                    stop_loss_price=stop_loss_price,
-                    take_profit_price=take_profit_price,
+                    stop_loss_price=stop_loss_price if is_long else take_profit_price,
+                    take_profit_price=take_profit_price if is_long else stop_loss_price,
                     position_size=position['size'],
                     force_update=True  # 交易后强制更新订单
                 )
