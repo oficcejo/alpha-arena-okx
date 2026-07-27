@@ -9,7 +9,7 @@
 不稳定盈利不要轻易开仓尝试，或轻仓尝试
 ## 可测试我另外一个新开源项目，适合下行及回撤市场，回测收益不错[空头收割机okx-short](https://github.com/oficcejo/okx-short)
 
-# 优化版本的okx-ai自动交易已上线，可移步最新开源项目[基于两阶段价格行为的ai自动交易机器人](https://github.com/oficcejo/okx-2pa-agent-web)
+# 20260727优化版本的okx-ai自动交易已上线，可移步最新开源项目[基于两阶段价格行为的ai自动交易机器人](https://github.com/oficcejo/okx-2pa-agent-web)https://github.com/oficcejo/okx-2pa-agent-web
 
 ## ⚠️ 重要提示：单向持仓模式
 
